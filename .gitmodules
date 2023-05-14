@@ -1,0 +1,3 @@
+[submodule "relion-tutorial-simplified"]
+	path = relion-tutorial-simplified
+	url = https://github.com/xtreme-d/relion-tutorial-simplified.git

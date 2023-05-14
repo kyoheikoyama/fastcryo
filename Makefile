@@ -26,3 +26,7 @@ env.cuda:
 	conda install -c conda-forge tensorboard -y
 	pip install psutil pandas lhafile pyarrow ipykernel
 
+motionCor2:
+	python script/motionCor2.py --SHORT_OR_ORIGINAL shortTIFF
+	python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data
+
