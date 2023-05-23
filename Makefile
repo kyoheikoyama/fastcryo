@@ -26,7 +26,16 @@ env.cuda:
 	conda install -c conda-forge tensorboard -y
 	pip install psutil pandas lhafile pyarrow ipykernel
 
-motionCor2:
+
+	#mkdir /media/kyohei/mrc_by_MotionCor/
+motioncor:
 	python script/motionCor2.py --SHORT_OR_ORIGINAL shortTIFF
 	python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data
 
+
+
+install:
+	pip install -r requirements.txt
+
+uninstall:
+	for i in $(cat requirements.txt); do pip uninstall -y $i; done
