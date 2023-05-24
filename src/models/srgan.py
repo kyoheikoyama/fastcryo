@@ -24,8 +24,9 @@ from pl_bolts.datamodules import TVTDataModule
 from pl_bolts.datasets.utils import prepare_sr_datasets
 from pl_bolts.models.gans.srgan.components import (
     SRGANDiscriminator,
-    SRGANGenerator,
+    # SRGANGenerator,
     VGG19FeatureExtractor,
+    ResidualBlock,
 )
 from pl_bolts.utils.stability import under_review
 
@@ -65,15 +66,15 @@ class MRCImageDataset(Dataset):
         assert short_path.split("/")[-1] == original_path.split("/")[-1]
 
         # image_size = (511, 720) #(1023, 1440)
-        image_size = (151, 172)  # (1023, 1440)
+        # image_size = (151, 172)  # (1023, 1440)
 
         with mrcfile.open(short_path, "r") as mrc:
             short_img = mrc.data.astype(self.datatype)
-            short_img = short_img[: image_size[0], : image_size[1]]
+            # short_img = short_img[: image_size[0], : image_size[1]]
 
         with mrcfile.open(original_path, "r") as mrc:
             original_img = mrc.data.astype(self.datatype)
-            original_img = original_img[: image_size[0], : image_size[1]]
+            # original_img = original_img[: image_size[0], : image_size[1]]
 
         # The original image (higher resolution)
         y = self.transform(original_img) if self.transform else original_img
@@ -111,6 +112,57 @@ class MRCImageDataModule(pl.LightningDataModule):
         return DataLoader(
             self.mrc_dataset, shuffle=False, num_workers=4, batch_size=self.batch_size
         )
+
+
+class SRGANGenerator(nn.Module):
+    def __init__(
+        self,
+        image_channels: int,
+        feature_maps: int = 64,
+        num_res_blocks: int = 16,
+        num_ps_blocks: int = 2,
+    ) -> None:
+        super().__init__()
+        # Input block (k9n64s1)
+        self.input_block = nn.Sequential(
+            nn.Conv2d(image_channels, feature_maps, kernel_size=9, padding=4),
+            nn.PReLU(),
+        )
+
+        # B residual blocks (k3n64s1)
+        res_blocks = []
+        for _ in range(num_res_blocks):
+            res_blocks += [ResidualBlock(feature_maps)]
+
+        # k3n64s1
+        res_blocks += [
+            nn.Conv2d(feature_maps, feature_maps, kernel_size=3, padding=1),
+            nn.BatchNorm2d(feature_maps),
+        ]
+        self.res_blocks = nn.Sequential(*res_blocks)
+
+        # PixelShuffle blocks (k3n256s1)
+        ps_blocks = []
+        for _ in range(num_ps_blocks):
+            ps_blocks += [
+                nn.Conv2d(feature_maps, 4 * feature_maps, kernel_size=3, padding=1),
+                # nn.PixelShuffle(2),
+                nn.PReLU(),
+            ]
+        self.ps_blocks = nn.Sequential(*ps_blocks)
+
+        # Output block (k9n3s1)
+        self.output_block = nn.Sequential(
+            nn.Conv2d(feature_maps, image_channels, kernel_size=9, padding=4),
+            nn.Tanh(),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x_res = self.input_block(x)
+        x = x_res + self.res_blocks(x_res)
+        # x = self.ps_blocks(x)
+        x = self.output_block(x)
+        return x
 
 
 # From lightning bolts
