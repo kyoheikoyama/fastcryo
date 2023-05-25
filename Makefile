@@ -28,10 +28,11 @@ env.cuda:
 
 
 	#mkdir /media/kyohei/mrc_by_MotionCor/
-motioncor:
+motioncor.short:
 	python script/motionCor2.py --SHORT_OR_ORIGINAL shortTIFF
-	python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data
 
+motioncor.original:	
+	python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data > motioncor2log.log
 
 
 install:

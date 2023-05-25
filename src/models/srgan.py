@@ -1,37 +1,34 @@
-import torch, glob
-from torch.utils.data import Dataset, DataLoader
-import pytorch_lightning as pl
 import mrcfile
-from PIL import Image
-import os
-from torchvision import transforms
-from pl_bolts.models.gans import SRGAN
-from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR as CosineAnnealing
-import torch.nn as nn
-
+import os, glob
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
 from warnings import warn
 
-import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+from torch.optim import Adam
+import torch.nn as nn
+from torch.utils.data import random_split
 
-from pl_bolts.callbacks import SRImageLoggerCallback
-from pl_bolts.datamodules import TVTDataModule
-from pl_bolts.datasets.utils import prepare_sr_datasets
+from torchvision import transforms
+
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
 from pl_bolts.models.gans.srgan.components import (
     SRGANDiscriminator,
     # SRGANGenerator,
     VGG19FeatureExtractor,
     ResidualBlock,
 )
+from pl_bolts.models.gans import SRGAN
 from pl_bolts.utils.stability import under_review
 
 
 DATATYPE = "float32"
+torch.manual_seed(42)
 
 
 class MRCImageDataset(Dataset):
@@ -98,19 +95,38 @@ class MRCImageDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         self.mrc_dataset = MRCImageDataset(self.data_dir, self.datatype, self.transform)
 
+        train_size = int(0.8 * len(self.mrc_dataset))
+        val_size = int(0.1 * len(self.mrc_dataset))
+        test_size = len(self.mrc_dataset) - train_size - val_size
+
+        (
+            self.mrc_train_dataset,
+            self.mrc_val_dataset,
+            self.mrc_test_dataset,
+        ) = random_split(self.mrc_dataset, [train_size, val_size, test_size])
+
     def train_dataloader(self):
         return DataLoader(
-            self.mrc_dataset, shuffle=True, num_workers=4, batch_size=self.batch_size
+            self.mrc_train_dataset,
+            shuffle=True,
+            num_workers=4,
+            batch_size=self.batch_size,
         )
 
     def val_dataloader(self):
         return DataLoader(
-            self.mrc_dataset, shuffle=False, num_workers=4, batch_size=self.batch_size
+            self.mrc_val_dataset,
+            shuffle=False,
+            num_workers=4,
+            batch_size=self.batch_size,
         )
 
     def test_dataloader(self):
         return DataLoader(
-            self.mrc_dataset, shuffle=False, num_workers=4, batch_size=self.batch_size
+            self.mrc_test_dataset,
+            shuffle=False,
+            num_workers=4,
+            batch_size=self.batch_size,
         )
 
 
@@ -280,6 +296,15 @@ class SRGAN(pl.LightningModule):
 
         return result
 
+    def validation_step(
+        self,
+        batch: Tuple[torch.Tensor, torch.Tensor],
+        batch_idx: int,
+    ) -> torch.Tensor:
+        hr_image, lr_image = batch
+        gen_loss = self._gen_loss(hr_image, lr_image)
+        self.log("val_loss", gen_loss)
+
     def _disc_step(
         self, hr_image: torch.Tensor, lr_image: torch.Tensor
     ) -> torch.Tensor:
@@ -355,7 +380,7 @@ class SRGAN(pl.LightningModule):
 
 if __name__ == "__main__":
     data_module = MRCImageDataModule(
-        "/media/kyohei/forAI/split_images/", datatype=DATATYPE, batch_size=2
+        "/media/kyohei/forAI/split_images/", datatype=DATATYPE, batch_size=1
     )
 
     model = SRGAN(
@@ -369,5 +394,23 @@ if __name__ == "__main__":
         generator_checkpoint=None,
     )
     model = model.to(torch.float16) if DATATYPE == "float16" else model
-    trainer = pl.Trainer(accelerator="gpu", devices=1, max_epochs=4)
+    from datetime import datetime
+
+    datetime = datetime.now().strftime("%Y%m%d%H%M%S")
+    logdir = f"./logdir/log{datetime}"
+    trainer = pl.Trainer(
+        accelerator="gpu",
+        devices=1,
+        max_epochs=1,
+        default_root_dir=logdir,
+        callbacks=[
+            EarlyStopping(
+                patience=5,
+                monitor="val_loss",
+                mode="min",
+                check_finite=True,
+            )
+        ],
+    )
     trainer.fit(model, datamodule=data_module)
+    # trainer.save_checkpoint(f"{}srgan.ckpt")
