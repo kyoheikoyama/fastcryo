@@ -11,6 +11,8 @@ from torch.utils.data import Dataset, DataLoader
 from torch.optim import Adam
 import torch.nn as nn
 from torch.utils.data import random_split
+import yaml
+from datetime import datetime
 
 from torchvision import transforms
 
@@ -83,7 +85,9 @@ class MRCImageDataset(Dataset):
 
 
 class MRCImageDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir: str, batch_size: int, datatype="float32"):
+    def __init__(
+        self, data_dir: str, batch_size: int, datatype="float32", devmode=False
+    ):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -91,12 +95,17 @@ class MRCImageDataModule(pl.LightningDataModule):
             [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
         )
         self.datatype = datatype
+        self.devmode = devmode
 
     def setup(self, stage=None):
         self.mrc_dataset = MRCImageDataset(self.data_dir, self.datatype, self.transform)
 
-        train_size = int(0.8 * len(self.mrc_dataset))
-        val_size = int(0.1 * len(self.mrc_dataset))
+        if self.devmode:
+            train_size = int(0.01 * len(self.mrc_dataset))
+            val_size = int(0.01 * len(self.mrc_dataset))
+        else:
+            train_size = int(0.8 * len(self.mrc_dataset))
+            val_size = int(0.1 * len(self.mrc_dataset))
         test_size = len(self.mrc_dataset) - train_size - val_size
 
         (
@@ -379,29 +388,52 @@ class SRGAN(pl.LightningModule):
 
 
 if __name__ == "__main__":
+    """
+    Example::
+
+            python srgan.py --devmode
+    """
+    parser = ArgumentParser()
+    parser.add_argument("--devmode", action="store_true", default=False)
+    # Get the absolute path of the script
+    script_path = os.path.dirname(os.path.abspath(__file__))
+    parser.add_argument(
+        "--hparams",
+        type=str,
+        default=os.path.join(script_path, "../../hparams/hparams.yaml"),
+    )
+    args = parser.parse_args()
+
+    # Load the YAML file
+    with open(args.hparams, "r") as file:
+        data = yaml.safe_load(file)
+    hpdict = dict(data)
+
     data_module = MRCImageDataModule(
-        "/media/kyohei/forAI/split_images/", datatype=DATATYPE, batch_size=1
+        "/media/kyohei/forAI/split_images/",
+        datatype=DATATYPE,
+        batch_size=1,
+        devmode=args.devmode,
     )
 
     model = SRGAN(
-        image_channels=1,
-        feature_maps_gen=64,
-        feature_maps_disc=64,
-        num_res_blocks=16,
-        scale_factor=1,
-        learning_rate=0.0001,
-        scheduler_step=100,
-        generator_checkpoint=None,
+        image_channels=hpdict["image_channels"],
+        feature_maps_gen=hpdict["feature_maps_gen"],
+        feature_maps_disc=hpdict["feature_maps_disc"],
+        num_res_blocks=hpdict["num_res_blocks"],
+        scale_factor=hpdict["scale_factor"],
+        learning_rate=hpdict["learning_rate"],
+        scheduler_step=hpdict["scheduler_step"],
+        generator_checkpoint=hpdict["generator_checkpoint"],
     )
     model = model.to(torch.float16) if DATATYPE == "float16" else model
-    from datetime import datetime
 
-    datetime = datetime.now().strftime("%Y%m%d%H%M%S")
+    datetime = datetime.now().strftime("%Y-%m%d-%H%M%S")
     logdir = f"./logdir/log{datetime}"
     trainer = pl.Trainer(
         accelerator="gpu",
         devices=1,
-        max_epochs=1,
+        max_epochs=3,
         default_root_dir=logdir,
         callbacks=[
             EarlyStopping(

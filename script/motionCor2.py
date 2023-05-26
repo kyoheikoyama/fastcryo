@@ -12,6 +12,7 @@ def motioncor2_command(intif, outmrc, gain=None):
     if gain is None:
         return command
     else:
+        print("gain is used")
         return command + f" -Gain {gain}"
 
 
@@ -35,6 +36,10 @@ def main():
             outmrc = os.path.join(
                 outdir, filename.replace(".tiff", ".mrc").replace(".tif", ".mrc")
             )
+
+            if os.path.exists(outmrc):
+                continue
+
             com = motioncor2_command(intif, outmrc)
             os.system(com)
 

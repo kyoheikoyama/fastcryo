@@ -32,7 +32,7 @@ motioncor.short:
 	python script/motionCor2.py --SHORT_OR_ORIGINAL shortTIFF
 
 motioncor.original:	
-	python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data > motioncor2log.log
+	python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data >> motioncor2log.log
 
 
 install:
