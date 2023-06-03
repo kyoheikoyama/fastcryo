@@ -1,0 +1,8 @@
+feature_maps_disc: 6
+feature_maps_gen: 32
+generator_checkpoint: null
+image_channels: 1
+learning_rate_disc: 1.0296101303663413e-05
+learning_rate_gen: 2.582675435477765e-05
+num_res_blocks: 8
+scheduler_step: 4
