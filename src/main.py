@@ -3,6 +3,7 @@ import yaml, os
 from datasets.mrc import MRCImageDataModule, MRCImageDataset
 from models.srgan import SRGAN, DATATYPE
 import pytorch_lightning as pl
+import pandas as pd
 import torch
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -19,6 +20,7 @@ def main(args) -> float:
         datatype=DATATYPE,
         batch_size=args.batch_size,
         datasize=args.datasize,
+        split_way=args.split_way,
     )
 
     model = SRGAN(
@@ -81,7 +83,7 @@ if __name__ == "__main__":
 
             python srgan.py --datasize dev
             python main.py --datasize all --hparams ../hparams/hparams_srgan.yaml \
-            --batch_size 3
+            --batch_size 3 --split_way images
     """
     parser = ArgumentParser()
     parser.add_argument(
@@ -104,6 +106,11 @@ if __name__ == "__main__":
         "--batch_size",
         default=3,
         type=int,
+    )
+    parser.add_argument(
+        "--split_way",
+        type=str,
+        default="images",
     )
     args = parser.parse_args()
 
