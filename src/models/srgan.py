@@ -117,6 +117,8 @@ class SRGAN(pl.LightningModule):
         learning_rate_gen: float = 1e-4,
         learning_rate_disc: float = 2e-6,
         scheduler_step: int = 100,
+        adv_loss_coeff: float = 10,
+        content_loss_coeff: float = 1e-2,
         **kwargs: Any,
     ) -> None:
         """
@@ -132,16 +134,20 @@ class SRGAN(pl.LightningModule):
         """
         super().__init__()
         self.save_hyperparameters()
-
+        self.generator = SRGANGenerator(
+            image_channels, feature_maps_gen, num_res_blocks, 1
+        )
         if generator_checkpoint:
-            self.generator = torch.load(generator_checkpoint)
+            self.generator.load_state_dict(
+                torch.load(generator_checkpoint)
+            )  # Load the weights
         else:
-            self.generator = SRGANGenerator(
-                image_channels, feature_maps_gen, num_res_blocks, 1
-            )
+            assert False
 
         self.discriminator = SRGANDiscriminator(image_channels, feature_maps_disc)
         self.vgg_feature_extractor = VGG19FeatureExtractor(image_channels)
+        self.adv_loss_coeff = adv_loss_coeff
+        self.content_loss_coeff = content_loss_coeff
 
     def configure_optimizers(
         self,
@@ -225,23 +231,32 @@ class SRGAN(pl.LightningModule):
         return disc_loss
 
     def _gen_loss(self, hr_image: torch.Tensor, lr_image: torch.Tensor) -> torch.Tensor:
+        # discriminator prediction on fake image, ultimately we want this to be 0.99 as a perfect discriminator
+        # we want the discriminator to think the fake image is real, so we want the discriminator to output 1 for the fake image
         fake, fake_pred = self._fake_pred(lr_image)
 
-        perceptual_loss = self._perceptual_loss(hr_image, fake)
-        adv_loss = self._adv_loss(fake_pred, ones=True)
-        content_loss = self._content_loss(hr_image, fake)
+        # adversarial loss := log(D(G(z)))
+        adv_loss = F.binary_cross_entropy_with_logits(
+            fake_pred, torch.ones_like(fake_pred)
+        )  # smaller is better
+        perceptual_loss = self._perceptual_loss(hr_image, fake)  # smaller is better
+        content_loss = self._content_loss(hr_image, fake)  # smaller is better
 
         self.log("loss/perceptual_loss", perceptual_loss, on_step=True, on_epoch=True)
         self.log("loss/adv_loss", adv_loss, on_step=True, on_epoch=True)
         self.log("loss/content_loss", content_loss, on_step=True, on_epoch=True)
 
         # gen_loss = 0.006 * perceptual_loss + 0.001 * adv_loss + content_loss
-        gen_loss = perceptual_loss + adv_loss + 0.1 * content_loss
+        gen_loss = (
+            perceptual_loss
+            + self.adv_loss_coeff * adv_loss
+            + self.content_loss_coeff * content_loss
+        )
 
         return gen_loss
 
     def _fake_pred(self, lr_image: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        fake = self(lr_image)
+        fake = self.forward(lr_image)
         fake_pred = self.discriminator(fake)
         return fake, fake_pred
 

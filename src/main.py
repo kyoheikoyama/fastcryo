@@ -7,6 +7,18 @@ import pandas as pd
 import torch
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
+from torch.utils.tensorboard import SummaryWriter
+
+from pytorch_lightning.callbacks import Callback
+from pl_bolts.callbacks import SRImageLoggerCallback
+
+
+class GraphLoggerCallback(Callback):
+    def on_train_start(self, trainer, pl_module):
+        model = pl_module  # .model
+        loader = trainer.datamodule.train_dataloader()
+        sample_input = next(iter(loader))[0].to(model.device)
+        trainer.logger.experiment.add_graph(model, sample_input)
 
 
 def main(args) -> float:
@@ -18,9 +30,9 @@ def main(args) -> float:
     data_module = MRCImageDataModule(
         args.datalocation,
         datatype=DATATYPE,
-        batch_size=args.batch_size,
+        batch_size=hpdict["batch_size"],  # args.batch_size,
         datasize=args.datasize,
-        split_way=args.split_way,
+        split_way=hpdict["split_way"],
     )
 
     model = SRGAN(
@@ -33,6 +45,8 @@ def main(args) -> float:
         learning_rate_disc=hpdict["learning_rate_disc"],
         scheduler_step=hpdict["scheduler_step"],
         generator_checkpoint=hpdict["generator_checkpoint"],
+        adv_loss_coeff=hpdict["adv_loss_coeff"],
+        content_loss_coeff=hpdict["content_loss_coeff"],
     )
     model = model.to(torch.float16) if DATATYPE == "float16" else model
 
@@ -56,21 +70,25 @@ def main(args) -> float:
             # PyTorchLightningPruningCallback(trial, monitor="val_loss"),
             checkpoint_callback,
             EarlyStopping(
-                patience=5,
+                patience=50,
                 monitor="val_loss",
                 mode="min",
                 check_finite=True,
             ),
+            GraphLoggerCallback(),
+            SRImageLoggerCallback(log_interval=2, scale_factor=1),
         ],
-        logger=pl.loggers.TensorBoardLogger(
-            save_dir="/media/kyohei/forAI/lightning_logs",
-            name="srgan",
-            # version=f"ver0",
-            # default_hp_metric=False,
-        ),
+        logger=[
+            pl.loggers.TensorBoardLogger(
+                save_dir="/media/kyohei/forAI/lightning_logs",
+                name="srgan",
+                # version=f"ver0",
+                # default_hp_metric=False,
+            )
+        ],
     )
+
     trainer.fit(model, datamodule=data_module)
-    # trainer.save_checkpoint(f"{}srgan.ckpt")
     valloss = trainer.callback_metrics["val_loss"].item()
     print("valloss", valloss)
 
@@ -82,7 +100,7 @@ if __name__ == "__main__":
     Example::
 
             python srgan.py --datasize dev
-            python main.py --datasize all --hparams ../hparams/hparams_srgan.yaml \
+            python main.py --datasize all --hparams ../hparams/hparams_srgan_pretrained2.yaml \
             --batch_size 3 --split_way images
     """
     parser = ArgumentParser()
@@ -101,16 +119,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--datalocation",
         default="/media/kyohei/forAI/split_images/",
-    )
-    parser.add_argument(
-        "--batch_size",
-        default=3,
-        type=int,
-    )
-    parser.add_argument(
-        "--split_way",
-        type=str,
-        default="images",
     )
     args = parser.parse_args()
 

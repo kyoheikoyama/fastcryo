@@ -177,12 +177,12 @@ class MRCImageDataModule(pl.LightningDataModule):
             self.paddingval,
         )
         print("Dataset size:", len(self.mrc_dataset))
-        print("Dataset size mode:", len(self.datasize))
+        print("Dataset size mode:", self.datasize)
 
         if self.split_way == "random":
             if self.datasize == "dev":
-                train_size = int(0.0005 * len(self.mrc_dataset))
-                val_size = int(0.0005 * len(self.mrc_dataset))
+                train_size = int(0.01 * len(self.mrc_dataset))
+                val_size = int(0.01 * len(self.mrc_dataset))
             elif self.datasize == "hpo":
                 train_size = int(0.1 * len(self.mrc_dataset))
                 val_size = int(0.1 * len(self.mrc_dataset))
@@ -200,6 +200,7 @@ class MRCImageDataModule(pl.LightningDataModule):
                 self.mrc_test_dataset,
             ) = random_split(self.mrc_dataset, [train_size, val_size, test_size])
         elif self.split_way == "images":
+            assert self.datasize == "all", "datasize must be all for split_way=images"
             train_val_indices, test_indices = get_split_indices(
                 self.mrc_dataset, testratio=0.1, shortlist=True
             )
