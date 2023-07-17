@@ -76,7 +76,7 @@ def main(args) -> float:
                 check_finite=True,
             ),
             GraphLoggerCallback(),
-            SRImageLoggerCallback(log_interval=2, scale_factor=1),
+            # SRImageLoggerCallback(log_interval=2, scale_factor=1), # This is really slow.
         ],
         logger=[
             pl.loggers.TensorBoardLogger(

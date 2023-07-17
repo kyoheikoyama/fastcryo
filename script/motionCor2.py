@@ -52,7 +52,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--SHORT_OR_ORIGINAL", type=str, choices=["cryoEM-data", "shortTIFF"]
+        "--SHORT_OR_ORIGINAL",
+        type=str,  # choices=["cryoEM-data", "shortTIFF"]
     )
     args = parser.parse_args()
     print(args)

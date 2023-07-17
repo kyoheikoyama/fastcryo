@@ -1,0 +1,12 @@
+feature_maps_disc: 6
+feature_maps_gen: 32
+generator_checkpoint: "/media/kyohei/forAI/lightning_logs/srgan/version_18/checkpoints/generator.pth"
+image_channels: 1
+learning_rate_disc: 1.0296101303663413e-05
+learning_rate_gen: 2.582675435477765e-05
+num_res_blocks: 8
+scheduler_step: 4
+batch_size: 4
+split_way: "images"
+adv_loss_coeff: 5
+content_loss_coeff: 0.01

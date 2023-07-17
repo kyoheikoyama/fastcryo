@@ -59,8 +59,15 @@ to make cryoem faster
 
 # Create Dataset 
 ## with notebook
-    - run 2023-0511_KatoLabDataParse.ipynb to create tiff files for only first 20frames
-    - run 2023-0515_run_motionCor2.ipynb to use motionCor2
+Kernel = "cryoem"
+
+    - run `2023_0601_download_EMPIAR.ipynb` to download data
+    - run `python shorten_tiff.py` to create tiff files for only first 20frames
+    - to use motionCor2, `make motioncor.short` and `python script/motionCor2.py --SHORT_OR_ORIGINAL EMPIAR`
+
+motioncor.original:	
+	python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data >> motioncor2log.log
+
       
 
  - if you are interested in how MRC looks like and normal summation of TIFF, then look at these two
@@ -74,33 +81,21 @@ to make cryoem faster
 
 
 # Learn relion or cryoSPARC
-
-
-
 ## relion
 - https://relion.readthedocs.io/en/release-4.0/Installation.html
 - https://github.com/xtreme-d/relion-tutorial-simplified
-
 
 
 # CryoEM General
 - https://cryoem101.org/chapter-1/
 
 
-# Kernel = "cryoem"
-
-
 # Data in EMPIAR-11119
-
 ## EMPIAR
-
-
 - https://www.ebi.ac.uk/empiar/EMPIAR-11119/
 
 ## FTP structure
-
 - https://ftp.ebi.ac.uk/empiar/world_availability/11119/ 
-
 
 - /empiar/world_availability/11119
     - 11119.xml

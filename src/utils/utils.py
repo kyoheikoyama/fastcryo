@@ -5,19 +5,37 @@ from PIL import Image
 from torch import nn
 
 
-def split_image(image, n=10):
+# def split_image(image, n=10):
+#     height, width = image.shape
+#     tile_height, tile_width = height // n, width // n
+
+#     tiles = []
+#     for i in range(n):
+#         for j in range(n):
+#             tile = image[
+#                 i * tile_height : (i + 1) * tile_height,
+#                 j * tile_width : (j + 1) * tile_width,
+#             ]
+#             tiles.append(tile)
+
+#     return tiles
+
+
+def split_image(image, n=10, margin=5):
     height, width = image.shape
     tile_height, tile_width = height // n, width // n
 
     tiles = []
     for i in range(n):
+        temp = []
         for j in range(n):
-            # print([i*tile_height, (i+1)*tile_height," | ", j*tile_width,(j+1)*tile_width])
             tile = image[
-                i * tile_height : (i + 1) * tile_height,
-                j * tile_width : (j + 1) * tile_width,
+                i * tile_height - margin : (i + 1) * tile_height + margin,
+                j * tile_width - margin : (j + 1) * tile_width + margin,
             ]
-            tiles.append(tile)
+            temp.append(tile)
+
+        tiles.append(temp)
 
     return tiles
 
