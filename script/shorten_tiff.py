@@ -8,8 +8,10 @@ from tqdm import tqdm
 from PIL import Image
 import pandas as pd
 import multiprocessing as mp
+from func_timeout import func_set_timeout
 
 
+@func_set_timeout(1200)
 def save_first_n_images_as_tiff(input_tiff, n=20):
     output_tiff = input_tiff.replace(f"/{args.datadir}/", "/shortTIFF/")
     assert output_tiff != input_tiff
@@ -90,8 +92,22 @@ def main(args):
     else:
         df = pd.read_csv(f"data_in_HD_{args.datetime}.csv")
 
-    with mp.Pool(4) as p:
-        p.map(save_first_n_images_as_tiff, df[df.nframes > 20]["tiffpath"])
+    output_tiff = [
+        f.replace(f"/{args.datadir}/", "/shortTIFF/")
+        for f in df[df.nframes > 20]["tiffpath"]
+    ]
+    sum_exist = [os.path.exists(f) for f in output_tiff]
+    percentages = sum(sum_exist) / len(sum_exist)
+    print(
+        f"Percentage of existed files: {percentages} = {sum(sum_exist)} / {len(sum_exist)}"
+    )
+
+    # with mp.Pool(6) as p:
+    #     p.map(save_first_n_images_as_tiff, df[df.nframes > 20]["tiffpath"])
+
+    for tiffpath in tqdm(df[df.nframes > 20]["tiffpath"]):
+        save_first_n_images_as_tiff(tiffpath)
+
     df.to_csv(f"data_in_HD_{args.datetime}.csv", index=None)
 
     print(df["out_path"].str.replace("/shortTIFF/", "/summingup/"))

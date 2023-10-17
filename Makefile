@@ -34,6 +34,8 @@ motioncor.short:
 motioncor.original:	
 	python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data >> motioncor2log.log
 
+motioncor:
+	python script/motionCor2.py --SHORT_OR_ORIGINAL shortTIFF && python script/motionCor2.py --SHORT_OR_ORIGINAL EMPIAR
 
 install:
 	pip install -r requirements.txt
