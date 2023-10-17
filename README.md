@@ -71,6 +71,19 @@ motioncor.original:
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/kyohei/miniconda3/envs/cryoem/lib
 
 
+## hpo
+- python hpo_srgan.py --datasize hpo
+
+
+## main of GAN
+- python main.py --datasize all --hparams ../hparams/hparams_srgan_pretrained2.yaml --batch_size 3 --split_way images
+
+
+## Prediction
+- python pred.py --datasize all --batch_size 3 --checkpoint_path /media/kyohei/forAI/lightning_logs/srgan/version_5/checkpoints/best-checkpoint-v2.ckpt
+
+
+
 
 # Learn relion or cryoSPARC
 ## relion
@@ -99,6 +112,3 @@ motioncor.original:
 	    - gpcr_190808no17_99-1_0000_Aug16_15.53.48.tif.jpg
 	    - more available in a metadata file (`filenames_ftp_data.parquet`)
 
-
-## Prediction
-- python pred_n_gather_tiles.py --datasize all --hparams ../hparams/hparams_srgan.yaml --batch_size 3 --checkpoint_path /media/kyohei/forAI/lightning_logs/srgan/version_5/checkpoints/best-checkpoint-v2.ckpt`
