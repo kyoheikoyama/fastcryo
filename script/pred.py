@@ -18,9 +18,9 @@ from tqdm import tqdm
 
 def main(args) -> float:
     # Load the YAML file
-    with open(args.hparams, "r") as file:
-        data = yaml.safe_load(file)
-    hpdict = dict(data)
+    # with open(args.hparams, "r") as file:
+    #     data = yaml.safe_load(file)
+    # hpdict = dict(data)
 
     dm = MRCImageDataModule(
         args.datalocation,
@@ -69,8 +69,7 @@ def main(args) -> float:
 if __name__ == "__main__":
     """
     Example::
-            python pred_n_gather_tiles.py --datasize all --hparams ../hparams/hparams_srgan.yaml --batch_size 3 \
-            --checkpoint_path /media/kyohei/forAI/lightning_logs/srgan/version_5/checkpoints/best-checkpoint-v2.ckpt
+            python pred_n_gather_tiles.py --datasize all --batch_size 3 --checkpoint_path /media/kyohei/forAI/lightning_logs/srgan/version_5/checkpoints/best-checkpoint-v2.ckpt
     """
     parser = ArgumentParser()
     parser.add_argument(
@@ -80,11 +79,6 @@ if __name__ == "__main__":
     )
     # Get the absolute path of the script
     script_path = os.path.dirname(os.path.abspath(__file__))
-    parser.add_argument(
-        "--hparams",
-        type=str,
-        default=os.path.join(script_path, "../hparams/hparams_srgan.yaml"),
-    )
     parser.add_argument(
         "--datalocation",
         default="/media/kyohei/forAI/split_images/",

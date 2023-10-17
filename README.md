@@ -19,15 +19,7 @@ to make cryoem faster
 │   │   └── ...
 │   ├── utils/                # Utility functions and classes
 │   │   └── __init__.py
-│   ├── experiments/          # Scripts to run experiments
-│   │   ├── experiment_1.py
-│   │   └── ...
 │   └── main.py               # Main script to run
-│
-├── tests/                    # Unit tests
-│   ├── __init__.py
-│   ├── test_model_1.py
-│   └── ...
 │
 ├── data/                     # Folder that contains data (ignore this folder in .gitignore)
 │   ├── raw/                  # Raw data, immutable
@@ -106,3 +98,7 @@ motioncor.original:
 	    - gpcr_190808no17_99-1_0000_Aug16_15.53.48.tif
 	    - gpcr_190808no17_99-1_0000_Aug16_15.53.48.tif.jpg
 	    - more available in a metadata file (`filenames_ftp_data.parquet`)
+
+
+## Prediction
+- python pred_n_gather_tiles.py --datasize all --hparams ../hparams/hparams_srgan.yaml --batch_size 3 --checkpoint_path /media/kyohei/forAI/lightning_logs/srgan/version_5/checkpoints/best-checkpoint-v2.ckpt`
