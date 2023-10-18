@@ -50,17 +50,18 @@ to make cryoem faster
 
 
 # Create Dataset 
-## with notebook
+
 Kernel = "cryoem"
 
     - run `2023_0601_download_EMPIAR.ipynb` to download data
     - run `python shorten_tiff.py` to create tiff files for only first 20frames
-    - to use motionCor2, `make motioncor.short` and `python script/motionCor2.py --SHORT_OR_ORIGINAL EMPIAR`
+    - to use motionCor2
+        1.  `make motioncor.short`
+        2.  `python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data >> motioncor2log.log`
 
-motioncor.original:	
-	python script/motionCor2.py --SHORT_OR_ORIGINAL cryoEM-data >> motioncor2log.log
+    - to split image of MRC
+        - `python split_image.py --dir_name /media/kyohei/forAI/mrc_by_MotionCor/`
 
-      
 
  - if you are interested in how MRC looks like and normal summation of TIFF, then look at these two
     - 2023-0517_KatoLabDataSum.ipynb
@@ -71,15 +72,15 @@ motioncor.original:
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/kyohei/miniconda3/envs/cryoem/lib
 
 
-## hpo
+# hpo
 - python hpo_srgan.py --datasize hpo
 
-
+# Training
 ## main of GAN
 - python main.py --datasize all --hparams ../hparams/hparams_srgan_pretrained2.yaml --batch_size 3 --split_way images
 
 
-## Prediction
+# Prediction
 - python pred.py --datasize all --batch_size 3 --checkpoint_path /media/kyohei/forAI/lightning_logs/srgan/version_5/checkpoints/best-checkpoint-v2.ckpt
 
 

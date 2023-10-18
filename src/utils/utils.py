@@ -21,7 +21,7 @@ from torch import nn
 #     return tiles
 
 
-def split_image(image, n=10, margin=5):
+def split_image(image, n=10, margin=0):
     height, width = image.shape
     tile_height, tile_width = height // n, width // n
 

@@ -89,7 +89,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Process some integers.")
+    parser = argparse.ArgumentParser()
     parser.add_argument("--nsplit", default=10, type=int, help="The number of split")
     parser.add_argument(
         "--dir_name",
